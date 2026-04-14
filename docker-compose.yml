@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      MESHFORGE_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:4173
+      MESHFORGE_PUBLIC_ASSET_BASE: http://localhost:8000/assets
+      MESHFORGE_STORAGE_ROOT: /app/data
+      MESHFORGE_DATABASE_PATH: /app/data/gen3d.db
+    volumes:
+      - ./backend/data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
