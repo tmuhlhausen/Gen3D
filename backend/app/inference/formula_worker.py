@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import math
-import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -149,8 +148,8 @@ class FormulaInferenceAdapter:
         if mesh.is_empty or len(mesh.vertices) < 3 or len(mesh.faces) < 1:
             raise InferenceError("source mesh did not contain usable triangles")
 
-        mesh.remove_duplicate_faces()
-        mesh.remove_degenerate_faces()
+        mesh.update_faces(mesh.unique_faces())
+        mesh.update_faces(mesh.nondegenerate_faces())
         mesh.remove_unreferenced_vertices()
         mesh.fix_normals()
         self._normalize_mesh(mesh)
@@ -189,7 +188,7 @@ class FormulaInferenceAdapter:
             progress(68, "smoothing mesh surface")
             mesh = self._laplacian_smooth(mesh, iterations=quality.smoothing_iterations)
 
-        mesh.remove_degenerate_faces()
+        mesh.update_faces(mesh.nondegenerate_faces())
         mesh.remove_unreferenced_vertices()
         mesh.fix_normals()
         self._normalize_mesh(mesh)
@@ -215,13 +214,13 @@ class FormulaInferenceAdapter:
             parts = self._character_parts()
         else:
             parts = [trimesh.creation.icosphere(subdivisions=3, radius=0.72)]
-            parts.append(trimesh.creation.torus(major_radius=0.52, minor_radius=0.12))
+            parts.append(self._safe_torus())
 
         progress(60, "merging procedural mesh parts")
         mesh = trimesh.util.concatenate(parts)
         mesh.visual.vertex_colors = self._palette_for_prompt(prompt, len(mesh.vertices))
-        mesh.remove_duplicate_faces()
-        mesh.remove_degenerate_faces()
+        mesh.update_faces(mesh.unique_faces())
+        mesh.update_faces(mesh.nondegenerate_faces())
         mesh.remove_unreferenced_vertices()
         mesh.fix_normals()
         self._normalize_mesh(mesh)
@@ -407,7 +406,7 @@ class FormulaInferenceAdapter:
         sole = trimesh.creation.box(extents=(1.8, 0.24, 0.72))
         upper = trimesh.creation.box(extents=(1.1, 0.48, 0.66))
         upper.apply_translation((0.18, 0.32, 0.0))
-        toe = trimesh.creation.uv_sphere(segments=32, count=[16, 16], radius=0.36)
+        toe = trimesh.creation.icosphere(subdivisions=2, radius=0.36)
         toe.apply_scale((1.1, 0.45, 0.8))
         toe.apply_translation((0.68, 0.18, 0.0))
         return [sole, upper, toe]
@@ -425,7 +424,7 @@ class FormulaInferenceAdapter:
         return parts
 
     def _helmet_parts(self) -> List[trimesh.Trimesh]:
-        shell = trimesh.creation.uv_sphere(segments=48, count=[24, 24], radius=0.72)
+        shell = trimesh.creation.icosphere(subdivisions=3, radius=0.72)
         shell.apply_scale((1.0, 0.78, 1.0))
         visor = trimesh.creation.box(extents=(0.86, 0.18, 0.12))
         visor.apply_translation((0.0, 0.05, 0.62))
@@ -442,16 +441,22 @@ class FormulaInferenceAdapter:
         return parts
 
     def _character_parts(self) -> List[trimesh.Trimesh]:
-        body = trimesh.creation.uv_sphere(segments=32, count=[16, 16], radius=0.46)
+        body = trimesh.creation.icosphere(subdivisions=2, radius=0.46)
         body.apply_scale((0.85, 1.25, 0.85))
-        head = trimesh.creation.uv_sphere(segments=32, count=[16, 16], radius=0.34)
+        head = trimesh.creation.icosphere(subdivisions=2, radius=0.34)
         head.apply_translation((0.0, 0.86, 0.0))
         parts = [body, head]
         for x in (-0.16, 0.16):
-            eye = trimesh.creation.uv_sphere(segments=16, count=[8, 8], radius=0.055)
+            eye = trimesh.creation.icosphere(subdivisions=1, radius=0.055)
             eye.apply_translation((x, 0.93, 0.31))
             parts.append(eye)
         return parts
+
+    def _safe_torus(self) -> trimesh.Trimesh:
+        try:
+            return trimesh.creation.torus(major_radius=0.52, minor_radius=0.12)
+        except TypeError:
+            return trimesh.creation.torus(0.52, 0.12)
 
     def _palette_for_prompt(self, prompt: str, count: int) -> np.ndarray:
         prompt_l = (prompt or "").lower()
