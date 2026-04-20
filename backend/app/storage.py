@@ -11,6 +11,8 @@ from urllib.parse import quote
 
 from .schemas import GenerationRequest, JobRecord, UploadResponse
 
+SUPPORTED_OUTPUT_FORMATS = {"glb", "obj", "fbx", "usdz"}
+
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -122,6 +124,12 @@ class Store:
             created_at=datetime.fromisoformat(row["created_at"]),
         )
 
+    def get_upload_path(self, upload_id: str) -> Optional[Path]:
+        row = self._connection.execute("SELECT storage_path FROM uploads WHERE upload_id = ?", (upload_id,)).fetchone()
+        if row is None:
+            return None
+        return Path(row["storage_path"])
+
     def create_job(self, payload: GenerationRequest) -> JobRecord:
         now = utc_now()
         job = JobRecord(
@@ -187,10 +195,7 @@ class Store:
         job_dir = self.storage_root / "jobs" / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
 
-        asset_name = f"artifact.{job.output_format}"
-        asset_path = job_dir / asset_name
-        manifest_path = job_dir / "manifest.json"
-
+        asset_path = job_dir / f"artifact.{job.output_format}"
         placeholder = {
             "job_id": job.id,
             "status": "completed",
@@ -202,14 +207,45 @@ class Store:
             "note": "This is a scaffold placeholder artifact. Replace the mock runner with a real mesh generation pipeline.",
         }
         asset_path.write_text(json.dumps(placeholder, indent=2), encoding="utf-8")
-        manifest_path.write_text(json.dumps(placeholder, indent=2), encoding="utf-8")
+        return self.complete_job_with_artifact(job_id, asset_path, placeholder)
 
-        asset_url = f"{self.public_asset_base}/jobs/{job.id}/{quote(asset_name)}"
+    def complete_job_with_artifact(self, job_id: str, artifact_path: Path, manifest: Dict[str, Any]) -> JobRecord:
+        job = self.require_job(job_id)
+        artifact_path = Path(artifact_path)
+        job_dir = self.storage_root / "jobs" / job_id
+        job_dir.mkdir(parents=True, exist_ok=True)
+
+        if artifact_path.parent != job_dir:
+            target = job_dir / artifact_path.name
+            target.write_bytes(artifact_path.read_bytes())
+            artifact_path = target
+
+        actual_format = artifact_path.suffix.lstrip(".").lower() or "glb"
+        if actual_format not in SUPPORTED_OUTPUT_FORMATS:
+            actual_format = "glb"
+
+        merged_manifest: Dict[str, Any] = {
+            "job_id": job.id,
+            "status": "completed",
+            "prompt": job.prompt,
+            "mode": job.mode,
+            "requested_output_format": job.output_format,
+            "actual_output_format": actual_format,
+            "artifact": artifact_path.name,
+            "reference_upload_ids": job.reference_upload_ids,
+            "metadata": job.metadata,
+            **manifest,
+        }
+        (job_dir / "manifest.json").write_text(json.dumps(merged_manifest, indent=2, sort_keys=True), encoding="utf-8")
+
+        asset_url = f"{self.public_asset_base}/jobs/{job.id}/{quote(artifact_path.name)}"
         job.status = "completed"
         job.progress = 100
+        job.output_format = actual_format  # type: ignore[assignment]
         job.output_url = asset_url
         job.asset_url = asset_url
         job.updated_at = utc_now()
+        job.metadata = {**job.metadata, "inference": merged_manifest}
         self._write_job(job)
         return job
 
