@@ -182,9 +182,22 @@ class Store:
         return job
 
     def update_job_progress(self, job_id: str, *, status: str, progress: int, error: Optional[str] = None) -> JobRecord:
+        return self.update_job_state(job_id, status=status, progress=progress, error=error)
+
+    def update_job_state(
+        self,
+        job_id: str,
+        *,
+        status: str,
+        progress: int,
+        metadata: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
+    ) -> JobRecord:
         job = self.require_job(job_id)
-        job.status = status
-        job.progress = progress
+        job.status = status  # type: ignore[assignment]
+        job.progress = max(0, min(progress, 100))
+        if metadata is not None:
+            job.metadata = metadata
         job.error = error
         job.updated_at = utc_now()
         self._write_job(job)
