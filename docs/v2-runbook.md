@@ -8,7 +8,7 @@ This repository now contains a second framework slice that is additive to the or
   - SQLite-backed job persistence
   - filesystem-backed reference uploads
   - static asset serving from `/assets`
-  - a mock job runner that writes scaffold artifacts to disk
+  - a local formula inference worker that publishes generated artifacts to disk
 - `frontend/v2.html` — a separate Vite entrypoint with:
   - image/remesh upload staging
   - persisted API settings
@@ -50,6 +50,12 @@ Then open:
 - frontend: `http://localhost:5173/v2.html`
 - backend docs: `http://localhost:8000/docs`
 
-## Important note
+## Current inference behavior
 
-The backend still writes placeholder artifacts, not real meshes. The purpose of this slice is to harden the framework boundaries so a real generation worker can be swapped in later with minimal API churn.
+The backend now has a local deterministic worker rather than a pure placeholder runner:
+
+- text jobs produce prompt-conditioned procedural GLB meshes
+- image jobs convert uploaded references into formula-derived relief GLBs
+- remesh jobs clean and normalize uploaded mesh assets with `trimesh`
+
+This is still not a neural production model. It is the first real adapter boundary: API → persisted job → worker → artifact → static asset URL. A future GPU worker or hosted model can replace the adapter without changing the public API contract.
