@@ -25,10 +25,12 @@ class JobRunner:
             def update_progress(progress: int, message: str) -> None:
                 current = self.store.require_job(job_id)
                 metadata = {**current.metadata, "worker_status": message}
-                current.metadata = metadata
-                current.status = "processing"
-                current.progress = max(1, min(progress, 99))
-                self.store._write_job(current)  # Keep status + metadata together for now.
+                self.store.update_job_state(
+                    job_id,
+                    status="processing",
+                    progress=max(1, min(progress, 99)),
+                    metadata=metadata,
+                )
 
             artifact = await asyncio.to_thread(self.adapter.run, job, upload_paths, output_dir, update_progress)
             self.store.complete_job_with_artifact(job_id, artifact.artifact_path, artifact.manifest)
