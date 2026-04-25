@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LatticeForge Generation Job",
+  "type": "object",
+  "properties": {
+    "prompt": { "type": "string" },
+    "style": { "type": "string" },
+    "quality": { "enum": ["draft", "standard", "high", "hero"] },
+    "target_polycount": { "type": "integer" },
+    "texture_resolution": { "type": "string" },
+    "export_format": { "enum": ["glb", "fbx", "obj", "usdz"] }
+  },
+  "required": ["prompt"]
+}

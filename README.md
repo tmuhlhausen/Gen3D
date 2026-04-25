@@ -1,58 +1,44 @@
-# Gen3D
+# LatticeForge 3D
 
-A starter full-stack scaffold for a browser-based 3D generation studio.
+AI-native 3D generation and modelling platform MVP scaffold.
 
 ## What is included
 
-- **frontend/** — Vite + React app with:
-  - prompt-based 3D generation UI
-  - backend connection settings
-  - job submission and polling
-  - demo fallback mode
-  - simple Three.js viewport via React Three Fiber
-- **backend/** — FastAPI scaffold with:
-  - `/health` and `/v1/health`
-  - `/generate-3d` and `/v1/generate-3d`
-  - `/jobs` and `/v1/jobs`
-  - `/jobs/{id}` and `/v1/jobs/{id}`
-  - `/uploads/reference` placeholder endpoint
-  - in-memory job store
-  - simulated async generation pipeline
+- Next.js web app with a dark SaaS-style 3D generation studio
+- Three.js / React Three Fiber viewport shell
+- Prompt-to-3D generation UI
+- Asset queue and export controls
+- FastAPI backend stub for prompt enhancement and generation jobs
+- Shared schema notes for future model orchestration
 
 ## Quick start
 
-### Backend
+### Web app
 
 ```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-Optional environment variables:
-
-- `MESHFORGE_API_TOKEN=your-secret-token`
-- `MESHFORGE_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000`
-- `MESHFORGE_PUBLIC_ASSET_BASE=http://localhost:8000/assets`
-
-### Frontend
-
-```bash
-cd frontend
+cd apps/web
 npm install
 npm run dev
 ```
 
-The frontend defaults to `http://localhost:8000` but also lets you change the API base URL and bearer token from the UI.
+Open `http://localhost:3000`.
 
-## Notes
+### API server
 
-This repo currently contains a scaffold, not a production inference stack. To turn it into a real product, the next steps are:
+```bash
+cd apps/api
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
 
-1. replace the mock generation pipeline with a real model service
-2. move jobs and uploads into a database + object storage
-3. add auth, billing, rate limiting, and webhooks
-4. add true image upload and mesh upload flows
-5. add deployment configs for your preferred platform
+Open `http://localhost:8000/health`.
+
+## MVP roadmap
+
+1. Replace mock generation with real queue-backed jobs.
+2. Add model providers: public LLM router, image-to-3D worker, texture worker.
+3. Store outputs in S3/R2-compatible object storage.
+4. Add auth, billing credits, project persistence, and export pipeline.
+5. Add edit-with-language actions for selected mesh objects.
