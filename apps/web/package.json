@@ -1,8 +1,13 @@
 {
   "name": "@latticeforge/web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "scripts": {"dev": "next dev", "build": "next build", "lint": "next lint"},
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0",
+    "build": "next build",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",

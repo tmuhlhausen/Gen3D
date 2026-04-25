@@ -4,11 +4,13 @@
   "type": "object",
   "properties": {
     "prompt": { "type": "string" },
+    "negative_prompt": { "type": "string" },
+    "mode": { "enum": ["text_to_3d", "image_to_3d", "mesh_to_mesh"] },
     "style": { "type": "string" },
     "quality": { "enum": ["draft", "standard", "high", "hero"] },
     "target_polycount": { "type": "integer" },
-    "texture_resolution": { "type": "string" },
+    "texture_resolution": { "type": "integer" },
     "export_format": { "enum": ["glb", "fbx", "obj", "usdz"] }
   },
-  "required": ["prompt"]
+  "required": ["prompt", "mode"]
 }
