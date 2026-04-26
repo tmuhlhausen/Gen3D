@@ -1,13 +1,32 @@
 {
   "name": "latticeforge3d",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "workspaces": ["apps/web", "packages/shared"],
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
     "lint": "npm run lint -w apps/web",
-    "typecheck": "npm run typecheck -w apps/web"
+    "typecheck": "npm run typecheck -w apps/web",
+    "audit:web": "npm audit --workspace apps/web --omit=optional",
+    "clean": "node -e \"require('fs').rmSync('node_modules',{recursive:true,force:true}); require('fs').rmSync('package-lock.json',{force:true}); require('fs').rmSync('apps/web/.next',{recursive:true,force:true});\""
+  },
+  "overrides": {
+    "@babel/runtime": "^7.28.4",
+    "braces": "^3.0.3",
+    "browserslist": "^4.28.1",
+    "cookie": "^1.1.1",
+    "json5": "^2.2.3",
+    "loader-utils": "^3.3.1",
+    "node-fetch": "^2.7.0",
+    "path-to-regexp": "^8.3.0",
+    "postcss": "^8.5.9",
+    "terser": "^5.44.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {}
 }
